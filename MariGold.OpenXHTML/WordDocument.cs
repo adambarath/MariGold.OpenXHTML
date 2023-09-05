@@ -8,72 +8,33 @@
     using System.Collections.Generic;
     using System.IO;
 
-    public sealed class WordDocument
+    public sealed class WordDocument : IDisposable
     {
-        private readonly IOpenXmlContext context;
+        private IOpenXmlContext context;
 
         public string ImagePath
         {
-            get
-            {
-                return context.ImagePath;
-            }
-
-            set
-            {
-                context.ImagePath = value;
-            }
+            get => context.ImagePath;
+            set => context.ImagePath = value;
         }
 
         public string BaseURL
         {
-            get
-            {
-                return context.BaseURL;
-            }
-
-            set
-            {
-                context.BaseURL = value;
-            }
+            get => context.BaseURL;
+            set => context.BaseURL = value;
         }
 
         public string UriSchema
         {
-            get
-            {
-                return context.UriSchema;
-            }
-
-            set
-            {
-                context.UriSchema = value;
-            }
+            get => context.UriSchema;
+            set => context.UriSchema = value;
         }
 
-        public WordprocessingDocument WordprocessingDocument
-        {
-            get
-            {
-                return context.WordprocessingDocument;
-            }
-        }
+        public WordprocessingDocument WordprocessingDocument => context.WordprocessingDocument;
 
-        public MainDocumentPart MainDocumentPart
-        {
-            get
-            {
-                return context.MainDocumentPart;
-            }
-        }
+        public MainDocumentPart MainDocumentPart => context.MainDocumentPart;
 
-        public Document Document
-        {
-            get
-            {
-                return context.Document;
-            }
-        }
+        public Document Document => context.Document;
 
         public WordDocument(string fileName)
         {
@@ -82,7 +43,14 @@
                 throw new ArgumentNullException("fileName");
             }
 
-            context = new OpenXmlContext(WordprocessingDocument.Create(fileName, WordprocessingDocumentType.Document));
+            if (File.Exists(fileName))
+            {
+                context = new OpenXmlContext(WordprocessingDocument.Open(fileName, true));
+            }
+            else
+            {
+                context = new OpenXmlContext(WordprocessingDocument.Create(fileName, WordprocessingDocumentType.Document));
+            }
         }
 
         public WordDocument(MemoryStream stream)
@@ -92,7 +60,15 @@
                 throw new ArgumentNullException("stream");
             }
 
-            context = new OpenXmlContext(WordprocessingDocument.Create(stream, WordprocessingDocumentType.Document));
+            if (stream.Length > 0)
+            {
+                stream.Seek(0, SeekOrigin.Begin);
+                context = new OpenXmlContext(WordprocessingDocument.Open(stream, true));
+            }
+            else
+            {
+                context = new OpenXmlContext(WordprocessingDocument.Create(stream, WordprocessingDocumentType.Document));
+            }
         }
 
         public void Process(IParser parser)
@@ -118,6 +94,12 @@
         public void Save()
         {
             context.Save();
+        }
+
+        public void Dispose()
+        {
+            context?.Dispose();
+            context = null;
         }
     }
 }

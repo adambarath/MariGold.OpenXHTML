@@ -4,7 +4,7 @@
     using DocumentFormat.OpenXml.Wordprocessing;
     using System;
 
-    internal interface IOpenXmlContext
+    internal interface IOpenXmlContext : IDisposable
     {
         string ImagePath { get; set; }
         string BaseURL { get; set; }

@@ -8,7 +8,6 @@
     internal sealed class OpenXmlContext : IOpenXmlContext
     {
         private WordprocessingDocument document;
-        private MainDocumentPart mainPart;
         private List<DocxElement> elements;
         private List<ITextElement> textElements;
         private Dictionary<Int16, AbstractNum> abstractNumList;
@@ -76,9 +75,9 @@
         {
             if (abstractNumList != null && numberingInstanceList != null)
             {
-                if (mainPart.NumberingDefinitionsPart == null)
+                if (MainDocumentPart.NumberingDefinitionsPart == null)
                 {
-                    _ = mainPart.AddNewPart<NumberingDefinitionsPart>("numberingDefinitionsPart");
+                    _ = MainDocumentPart.AddNewPart<NumberingDefinitionsPart>("numberingDefinitionsPart");
                 }
 
                 Numbering numbering = new Numbering();
@@ -93,15 +92,18 @@
                     numbering.Append(numberingInstance.Value);
                 }
 
-                mainPart.NumberingDefinitionsPart.Numbering = numbering;
+                MainDocumentPart.NumberingDefinitionsPart.Numbering = numbering;
             }
         }
 
         internal OpenXmlContext(WordprocessingDocument document)
         {
             this.document = document;
-            mainPart = this.document.AddMainDocumentPart();
-            mainPart.Document = new Document();
+            if (this.document.MainDocumentPart == null)
+            {
+                var mainPart = this.document.AddMainDocumentPart();
+                mainPart.Document = new Document();
+            }
 
             PrepareWordElements();
         }
@@ -170,6 +172,7 @@
         {
             get
             {
+                var mainPart = document?.MainDocumentPart;
                 if (mainPart == null)
                 {
                     throw new InvalidOperationException("Document is not opened!");
@@ -179,13 +182,7 @@
             }
         }
 
-        public Document Document
-        {
-            get
-            {
-                return MainDocumentPart.Document;
-            }
-        }
+        public Document Document => MainDocumentPart.Document;
 
         public Int16 ListNumberId
         {
@@ -205,12 +202,6 @@
             SaveNumberDefinitions();
 
             Document.Save();
-
-            document.Close();
-            document.Dispose();
-
-            document = null;
-            mainPart = null;
         }
 
         public DocxElement Convert(DocxNode node)
@@ -275,6 +266,14 @@
         public IDocxInterchanger GetInterchanger()
         {
             return new DocxInterchanger();
+        }
+
+        public void Dispose()
+        {
+            document?.Close();
+            document?.Dispose();
+
+            document = null;
         }
     }
 }
